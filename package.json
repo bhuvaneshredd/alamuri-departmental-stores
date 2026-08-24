@@ -1,0 +1,37 @@
+{
+  "name": "quick-commerce-store-monorepo",
+  "version": "1.0.0",
+  "description": "Production-ready single-store quick-commerce e-commerce platform",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "db:generate": "npm run prisma:generate --workspace=server",
+    "db:migrate": "npm run prisma:migrate --workspace=server",
+    "db:seed": "npm run prisma:seed --workspace=server",
+    "test": "npm run test --workspace=server",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "quick-commerce",
+    "ecommerce",
+    "react",
+    "express",
+    "prisma",
+    "postgresql",
+    "razorpay"
+  ],
+  "author": "QuickStore Team",
+  "license": "MIT"
+}
