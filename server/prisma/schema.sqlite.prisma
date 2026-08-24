@@ -1,51 +1,12 @@
-// PostgreSQL Production Schema for QuickStore Quick-Commerce Platform
+// Prisma schema for QuickStore Single-Store Quick-Commerce Platform
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum Role {
-  CUSTOMER
-  ADMIN
-}
-
-enum AddressType {
-  HOME
-  WORK
-  OTHER
-}
-
-enum OrderStatus {
-  PLACED
-  CONFIRMED
-  PACKING
-  READY_FOR_DELIVERY
-  OUT_FOR_DELIVERY
-  DELIVERED
-  CANCELLED
-}
-
-enum PaymentMethod {
-  ONLINE_RAZORPAY
-  CASH_ON_DELIVERY
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-  COD
-}
-
-enum DiscountType {
-  PERCENTAGE
-  FIXED
 }
 
 model User {
@@ -55,7 +16,7 @@ model User {
   phone        String?       @unique
   passwordHash String
   profileImage String?
-  role         Role          @default(CUSTOMER)
+  role         String        @default("CUSTOMER") // "CUSTOMER" | "ADMIN"
   isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -65,9 +26,6 @@ model User {
   cart          Cart?
   couponUsages  CouponUsage[]
   notifications Notification[]
-
-  @@index([email])
-  @@index([phone])
 }
 
 model Address {
@@ -85,12 +43,10 @@ model Address {
   landmark    String?
   latitude    Float?
   longitude   Float?
-  addressType AddressType @default(HOME)
+  addressType String      @default("HOME") // "HOME" | "WORK" | "OTHER"
   isDefault   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-
-  @@index([userId])
 }
 
 model Category {
@@ -105,9 +61,6 @@ model Category {
   updatedAt    DateTime  @updatedAt
 
   products     Product[]
-
-  @@index([slug])
-  @@index([displayOrder])
 }
 
 model Product {
@@ -133,12 +86,6 @@ model Product {
   images            ProductImage[]
   cartItems         CartItem[]
   orderItems        OrderItem[]
-
-  @@index([categoryId])
-  @@index([slug])
-  @@index([isFeatured])
-  @@index([isAvailable])
-  @@index([brand])
 }
 
 model ProductImage {
@@ -148,8 +95,6 @@ model ProductImage {
   url       String
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  @@index([productId])
 }
 
 model Cart {
@@ -159,8 +104,6 @@ model Cart {
   items     CartItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-
-  @@index([userId])
 }
 
 model CartItem {
@@ -174,8 +117,6 @@ model CartItem {
   updatedAt DateTime @updatedAt
 
   @@unique([cartId, productId])
-  @@index([cartId])
-  @@index([productId])
 }
 
 model Order {
@@ -183,9 +124,9 @@ model Order {
   orderNumber         String               @unique
   userId              String
   user                User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  status              OrderStatus          @default(PLACED)
-  paymentMethod       PaymentMethod
-  paymentStatus       PaymentStatus        @default(PENDING)
+  status              String               @default("PLACED") // "PLACED" | "CONFIRMED" | "PACKING" | "READY_FOR_DELIVERY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
+  paymentMethod       String               // "ONLINE_RAZORPAY" | "CASH_ON_DELIVERY"
+  paymentStatus       String               @default("PENDING") // "PENDING" | "PAID" | "FAILED" | "REFUNDED" | "COD"
   subtotal            Float
   discount            Float                @default(0)
   deliveryFee         Float                @default(0)
@@ -207,11 +148,6 @@ model Order {
   items               OrderItem[]
   statusHistory       OrderStatusHistory[]
   couponUsages        CouponUsage[]
-
-  @@index([userId])
-  @@index([orderNumber])
-  @@index([status])
-  @@index([createdAt])
 }
 
 model OrderItem {
@@ -227,26 +163,21 @@ model OrderItem {
   mrp          Float
   quantity     Int
   total        Float
-
-  @@index([orderId])
-  @@index([productId])
 }
 
 model OrderStatusHistory {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
-  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status    OrderStatus
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String   // OrderStatus
   comment   String?
-  createdAt DateTime    @default(now())
-
-  @@index([orderId])
+  createdAt DateTime @default(now())
 }
 
 model Coupon {
   id                 String        @id @default(cuid())
   code               String        @unique
-  discountType       DiscountType  @default(PERCENTAGE)
+  discountType       String        @default("PERCENTAGE") // "PERCENTAGE" | "FIXED"
   discountValue      Float
   minimumOrderAmount Float         @default(0)
   maximumDiscount    Float?
@@ -260,9 +191,6 @@ model Coupon {
   updatedAt          DateTime      @updatedAt
 
   usages             CouponUsage[]
-
-  @@index([code])
-  @@index([isActive])
 }
 
 model CouponUsage {
@@ -275,10 +203,6 @@ model CouponUsage {
   order          Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
   discountAmount Float
   usedAt         DateTime @default(now())
-
-  @@index([couponId])
-  @@index([userId])
-  @@index([orderId])
 }
 
 model StoreSetting {
@@ -315,7 +239,4 @@ model Notification {
   isRead    Boolean  @default(false)
   metadata  String?  // JSON string
   createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([isRead])
 }
