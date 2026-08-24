@@ -91,15 +91,15 @@ export const calculateOrderPricing = async (
   const totalProductSavings = Math.max(0, mrpTotal - subtotal);
 
   // Store Settings for delivery fee & taxes
-  const settings = await prisma.storeSetting.findFirst() || {
-    minOrderAmount: 99,
+  const settings = (await prisma.storeSetting.findFirst()) || {
+    minOrderAmount: 0,
     deliveryFee: 25,
     freeDeliveryThreshold: 299,
     taxPercentage: 5,
   };
 
-  if (subtotal < settings.minOrderAmount) {
-    throw new Error(`Minimum order amount is ₹${settings.minOrderAmount}. Current subtotal: ₹${subtotal}.`);
+  if (settings.minOrderAmount > 0 && subtotal < settings.minOrderAmount) {
+    throw new Error(`Minimum order value is ₹${settings.minOrderAmount}. Please add ₹${(settings.minOrderAmount - subtotal).toFixed(0)} more.`);
   }
 
   const isFreeDelivery = subtotal >= settings.freeDeliveryThreshold;

@@ -146,6 +146,9 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response, next
 
     return successResponse(res, 'Order placed successfully.', order, 201);
   } catch (error: any) {
+    if (error.message) {
+      return errorResponse(res, error.message, 400);
+    }
     next(error);
   }
 };
