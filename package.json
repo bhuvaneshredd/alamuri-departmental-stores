@@ -1,0 +1,21 @@
+{
+  "name": "metro-retail-supermarket-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "test": "npm test --workspace=server",
+    "start": "npm start --workspace=server",
+    "db:migrate": "npm run prisma:migrate --workspace=server",
+    "db:push": "npm run prisma:push --workspace=server",
+    "db:seed": "npm run prisma:seed --workspace=server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

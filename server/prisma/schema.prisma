@@ -1,0 +1,242 @@
+// Prisma schema for QuickStore Single-Store Quick-Commerce Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  phone        String?       @unique
+  passwordHash String
+  profileImage String?
+  role         String        @default("CUSTOMER") // "CUSTOMER" | "ADMIN"
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  cart          Cart?
+  couponUsages  CouponUsage[]
+  notifications Notification[]
+}
+
+model Address {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName    String
+  phone       String
+  house       String
+  street      String
+  area        String
+  city        String
+  state       String
+  pincode     String
+  landmark    String?
+  latitude    Float?
+  longitude   Float?
+  addressType String      @default("HOME") // "HOME" | "WORK" | "OTHER"
+  isDefault   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Category {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  description  String?
+  image        String?
+  displayOrder Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  products     Product[]
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  name              String
+  slug              String         @unique
+  description       String?
+  brand             String?
+  categoryId        String
+  category          Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  price             Float          // Current Selling Price
+  mrp               Float          // Maximum Retail Price
+  discount          Float          @default(0) // Discount percentage
+  unit              String         // e.g. "500 g", "1 L", "1 pack"
+  stockQuantity     Int            @default(0)
+  lowStockThreshold Int            @default(5)
+  image             String?
+  isAvailable       Boolean        @default(true)
+  isFeatured        Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  images            ProductImage[]
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id                  String               @id @default(cuid())
+  orderNumber         String               @unique
+  userId              String
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status              String               @default("PLACED") // "PLACED" | "CONFIRMED" | "PACKING" | "READY_FOR_DELIVERY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
+  paymentMethod       String               // "ONLINE_RAZORPAY" | "CASH_ON_DELIVERY"
+  paymentStatus       String               @default("PENDING") // "PENDING" | "PAID" | "FAILED" | "REFUNDED" | "COD"
+  subtotal            Float
+  discount            Float                @default(0)
+  deliveryFee         Float                @default(0)
+  tax                 Float                @default(0)
+  total               Float
+  couponCode          String?
+  addressSnapshot     String               // Stored as JSON string
+  deliveryLatitude    Float?
+  deliveryLongitude   Float?
+  deliveryDistanceKm  Float?
+  deliveryNotes       String?
+  cancelReason        String?
+  razorpayOrderId     String?              @unique
+  razorpayPaymentId   String?
+  razorpaySignature   String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  items               OrderItem[]
+  statusHistory       OrderStatusHistory[]
+  couponUsages        CouponUsage[]
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName  String
+  productImage String?
+  unit         String?
+  price        Float
+  mrp          Float
+  quantity     Int
+  total        Float
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String   // OrderStatus
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id                 String        @id @default(cuid())
+  code               String        @unique
+  discountType       String        @default("PERCENTAGE") // "PERCENTAGE" | "FIXED"
+  discountValue      Float
+  minimumOrderAmount Float         @default(0)
+  maximumDiscount    Float?
+  startDate          DateTime
+  expiryDate         DateTime
+  usageLimit         Int?
+  perCustomerLimit   Int           @default(1)
+  usedCount          Int           @default(0)
+  isActive           Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  usages             CouponUsage[]
+}
+
+model CouponUsage {
+  id             String   @id @default(cuid())
+  couponId       String
+  coupon         Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId        String?
+  order          Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  discountAmount Float
+  usedAt         DateTime @default(now())
+}
+
+model StoreSetting {
+  id                       String   @id @default("default-store-setting")
+  storeName                String   @default("QuickStore")
+  storeLogo                String?
+  storePhone               String   @default("+91 98765 43210")
+  storeEmail               String   @default("support@quickstore.in")
+  storeAddress             String   @default("Shop 4, Green Avenue, Indiranagar, Bengaluru, Karnataka 560038")
+  storeLatitude            Float    @default(12.9716)
+  storeLongitude           Float    @default(77.5946)
+  maxDeliveryRadiusKm      Float    @default(7.5)
+  minOrderAmount           Float    @default(99.0)
+  deliveryFee              Float    @default(25.0)
+  freeDeliveryThreshold    Float    @default(299.0)
+  codEnabled               Boolean  @default(true)
+  maxCodAmount             Float    @default(2000.0)
+  onlinePaymentEnabled     Boolean  @default(true)
+  isOpen                   Boolean  @default(true)
+  openingTime              String   @default("06:00")
+  closingTime              String   @default("23:00")
+  estimatedDeliveryMinutes Int      @default(15)
+  taxPercentage            Float    @default(5.0)
+  updatedAt                DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("SYSTEM") // ORDER_UPDATE, OFFER, SYSTEM
+  isRead    Boolean  @default(false)
+  metadata  String?  // JSON string
+  createdAt DateTime @default(now())
+}
