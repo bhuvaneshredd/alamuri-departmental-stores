@@ -13,20 +13,17 @@ export const createApp = (): Express => {
   const app = express();
 
   // Security Headers
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: false }));
 
-  // CORS Setup
+  // CORS Setup (allow all Vercel, localhost, and custom domain clients)
   app.use(
     cors({
-      origin: [
-        config.clientUrl,
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'http://127.0.0.1:5173',
-      ],
+      origin: (origin, callback) => {
+        callback(null, true);
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     })
   );
 
